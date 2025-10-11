@@ -94,11 +94,7 @@ export const verifyOtp = async (req, res) => {
       success: true,
       msg: "OTP verified successfully",
       token, // still return for API clients
-      user: {
-        id: u._id,
-        fullName: u.fullName,
-        email: u.email,
-      },
+      u
     });
   } catch (err) {
     console.error("OTP verification error:", err);

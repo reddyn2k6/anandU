@@ -101,11 +101,7 @@ export const verifyOtp = async (req, res) => {
       success: true,
       msg: "OTP verified, registration complete",
       token, // still return in JSON for mobile clients
-      user: {
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-      },
+      u
     });
   } catch (error) {
     console.error("Verify OTP error:", error);

@@ -33,7 +33,11 @@ export const login=async(req,res)=>{
         maxAge: 7*24*60*60*1000,
      }); 
 
+<<<<<<< HEAD
      return res.json({success:true,msg:"User Logged in succesfully",token,user});
+=======
+     return res.json({success:true,msg:"User Logged in succesfully",user,token});
+>>>>>>> 2cd36b5795e289c8777b8bf4573f280ea2c05811
     }
     catch(err) {
         res.json({success:false,msg:"Login Failed"});
