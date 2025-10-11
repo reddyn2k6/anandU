@@ -21,6 +21,25 @@ catch(err){
 
 }
 
+export const getnewbookings=async(req,res)=>{
+    try{
+       const providerId=req.provider._id;
+if(!providerId) {
+    return res.status(400).json({success:false,msg:"No providerId found"});
+}
+       const provider=await ServiceProvider.findById(providerId);
+
+       if(!provider) {
+            return res.status(400).json({success:false,msg:"No such provider"});
+       }
+
+       return res.status(200).json({success:true, newBookings:provider.newBookings});
+    }
+    catch(err) {
+        return res.status(400).json({success:false,msg:"Server Error"});
+    }
+}
+
 export const updateService = async (req, res) => {
   try {
     const providerId = req.provider._id;
@@ -108,12 +127,4 @@ export const updateService = async (req, res) => {
   }
 };
 
-
-
-
-export default {getAllServices,updateService};
-
-
-
-
-
+export default {getAllServices,updateService, getnewbookings};
