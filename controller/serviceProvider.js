@@ -1,6 +1,7 @@
 import ServiceProvider from "../model/serviceProviderModel.js";
 import Service from "../model/serviceModel.js";
 import Category from "../model/categoryModel.js"
+import Booking from "../model/bookingModel.js";
 
 export const getAllServices=async(req ,res) =>{
 
@@ -38,6 +39,20 @@ if(!providerId) {
     catch(err) {
         return res.status(400).json({success:false,msg:"Server Error"});
     }
+}
+
+export const getBookings=async(req,res)=>{
+       try{
+           const bookings=await Booking.find({});
+
+           return res.status(200).json({
+            success:true,
+            bookings
+           });
+       }
+       catch(err) {
+        return res.status(400).json({success:false,msg:"Error occured"});
+       }
 }
 
 export const updateService = async (req, res) => {
