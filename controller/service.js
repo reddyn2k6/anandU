@@ -51,25 +51,62 @@ export const addService = async (req, res) => {
 
 export const getServices = async (req, res) => {
   const services = await Service.find({})
-    .populate('categories', 'name slug')
-    .populate('providers', 'name location');
+    .populate('categories')
+    .populate('providers');
   
  return res.status(201).send(services);
 };
 
 
-// export const getServiceById = async (req, res) => {
-//   const service = await Service.findById(req.params.id)
-//     .populate('categories', 'name slug')
-//     .populate('providers', 'name location email phone');
+export const getServiceById = async (req, res) => {
+  const service = await Service.findById(req.params.id)
+    .populate('categories')
+    .populate('providers');
     
-//   if (service) {
-//     res.json({success:true,msg:"Service Fetched"});
-//   } else {
-//     res.status(404).json({success:false,msg:'Service not found'});
-//   }
-// };
+  if (service) {
+    res.json({success:true,service});
+  } else {
+    res.status(404).json({success:false,msg:'Service not found'});
+  }
+};
 
+export const getServiceByName = async (req, res) => {
+  try {
+    const { name } = req.body;
+
+    if (!name || name.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        msg: "Service name is required.",
+      });
+    }
+
+    // Case-insensitive search using regex
+    const services = await Service.find({
+      name: { $regex: new RegExp(name, "i") }, // 'i' = ignore case
+    }).populate("categories providers");
+
+    if (services.length === 0) {
+      return res.status(404).json({
+        success: false,
+        msg: "No services found with that name.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: services.length,
+      services,
+    });
+  } catch (err) {
+    console.error("Error in getServiceByName:", err);
+    return res.status(500).json({
+      success: false,
+      msg: "Server error.",
+    });
+  }
+};
+ 
 
 
 

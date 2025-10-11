@@ -10,7 +10,7 @@ export const getAllCategories =async (req, res) => {
 export const getServicesByCategory = async (req, res) => {
   const category = await Category.findOne({ slug: req.params.slug });
   if (category) {
-    const services = await Service.find({ categories: category._id });
+    const services = await Service.find({ categories: category._id }).populate("categories","name");
     res.json(services);
   } else {
     res.status(404).json({success:false,msg:"No Such category"});
