@@ -1,5 +1,5 @@
 import User from "../model/userModel.js";
-
+import Booking from "../model/bookingModel.js";
 
 export const deleteUser = async (req, res) => {
   try {
@@ -125,6 +125,52 @@ export const updateProfile = async (req, res) => {
 };
 
 
+
+
+export const getUserBookings = async (req, res) => {
+  try {
+    const userId = req.user._id; // ✅ assuming user is authenticated
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        msg: "Unauthorized access. Please log in.",
+      });
+    }
+
+    // 🔹 Fetch all bookings for the user
+    const bookings = await Booking.find({ user: userId })
+      .populate({
+        path: "service",
+        select: "name description priceInfo images categories providers",
+        populate: [
+          { path: "categories", select: "name" },
+          { path: "providers", select: "name contact email" },
+        ],
+      })
+      .sort({ createdAt: -1 }); // newest first
+
+    if (!bookings || bookings.length === 0) {
+      return res.status(404).json({
+        success: false,
+        msg: "No bookings found for this user.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: bookings.length,
+      bookings,
+    });
+  } catch (err) {
+    console.error("Error in getUserBookings:", err);
+    return res.status(500).json({
+      success: false,
+      msg: "Server error while fetching user bookings.",
+    });
+  }
+};
+
 export default {
-    getUserDetails,removeFavorite,addFavorite,getUserFavorites,deleteUser,updateProfile
+    getUserDetails,removeFavorite,addFavorite,getUserFavorites,deleteUser,updateProfile,getUserBookings
 }
