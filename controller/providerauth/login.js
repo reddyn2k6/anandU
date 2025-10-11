@@ -3,10 +3,6 @@ import bcrypt from "bcryptjs"
 import ServiceProvider from "../../model/serviceProviderModel.js"
 
 
-
-
-
-
 export const login=async(req,res)=>{
     const {email,password}=req.body;
 
