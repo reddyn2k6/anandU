@@ -26,7 +26,10 @@ const serviceSchema = new mongoose.Schema({
       type: Number,
       default: 0,
     },
-
+  mindaysprior:{
+    type:Number,
+    default:0
+  },
 
  currentBookingDates: {
   type: [Date],

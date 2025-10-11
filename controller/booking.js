@@ -13,7 +13,6 @@ export const serviceAvailability = async (req, res) => {
         msg: "Please provide a valid date.",
       });
     }
-    
 
     if (!minp) {
       return res.status(400).json({
@@ -21,6 +20,7 @@ export const serviceAvailability = async (req, res) => {
         msg: "Please provide a lower count.",
       });
     }
+
     if (!maxp) {
       return res.status(400).json({
         success: false,
@@ -36,31 +36,44 @@ export const serviceAvailability = async (req, res) => {
       });
     }
 
-    // ✅ Check min and max people constraints
-    if (service.minPeople < minp) {
+    // ✅ Check min and max people constraints (corrected comparison)
+    if (minp < service.minPeople) {
       return res.status(400).json({
         success: false,
         msg: `This service requires at least ${service.minPeople} people.`,
       });
     }
 
-    if (service.maxPeople > maxp) {
+    if (maxp > service.maxPeople) {
       return res.status(400).json({
         success: false,
         msg: `This service allows up to ${service.maxPeople} people.`,
       });
     }
 
-    // ✅ Convert given date to proper Date object (ignoring time)
+    // ✅ Convert given date to proper Date object (ignore time)
     const selectedDate = new Date(date);
     selectedDate.setHours(0, 0, 0, 0);
 
+    // ✅ Calculate days difference between current date and selected date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffInMs = selectedDate - today;
+    const diffInDays = Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
+
+    // ✅ Check if selected date is at least minDaysPrior days ahead
+    if (diffInDays < service.mindaysprior) {
+      return res.status(400).json({
+        success: false,
+        msg: `This service must be booked at least ${service.minDaysPrior} days in advance.`,
+      });
+    }
+
     // ✅ Check if date is already booked
     const isBooked = service.currentBookingDates.some(
-      (bookedDate) => new Date(bookedDate).toDateString() === selectedDate.toDateString()
+      (bookedDate) =>
+        new Date(bookedDate).toDateString() === selectedDate.toDateString()
     );
-
-
 
     if (isBooked) {
       return res.status(400).json({
@@ -75,9 +88,7 @@ export const serviceAvailability = async (req, res) => {
       msg: "Service is available for booking.",
       service,
     });
-  } 
-  
-  catch (err) {
+  } catch (err) {
     console.error("Error in serviceAvailability:", err);
     return res.status(500).json({
       success: false,

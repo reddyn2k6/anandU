@@ -11,12 +11,14 @@ const generateSlug = (name) => {
 
 
 export const addService = async (req, res) => {
-  const { name, description, images, priceInfo, categoryName,minPeople,maxPeople } = req.body;
+  const { name, description, images, priceInfo, categoryName,minPeople,maxPeople,mindaysprior } = req.body;
   
   if (!name || !priceInfo || !categoryName || !minPeople || !maxPeople) {
     res.status(400).json({success:false,msg:"All fields are required"});
   }
-
+   if(minPeople>maxPeople) {
+    return res.status(400).json({success:false,msg:"Minimum People cannot be more than maximum people"});
+   }
   let category = await Category.findOne({ name: categoryName });
 
   if (!category) {
@@ -31,7 +33,7 @@ export const addService = async (req, res) => {
   const service = await Service.create({
     name, description, images, priceInfo,
     categories: category._id,
-    providers: providerId,
+    providers: providerId,minPeople,maxPeople,mindaysprior
   });
 
   const provider = await ServiceProvider.findById(providerId);
