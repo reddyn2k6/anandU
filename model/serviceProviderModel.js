@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { mongo } from "mongoose";
 
 const serviceProviderSchema = new mongoose.Schema({
   name: { type: String, required: true},
@@ -16,9 +16,12 @@ verifyOtpExpireAt:{ type:Number, default:0,},
     imageUrl: { type: String }
   }],
 
- 
- 
-  services: [{ type: mongoose.Schema.Types.ObjectId, ref: "Service" }]
+  services: [{ type: mongoose.Schema.Types.ObjectId, ref: "Service" }],
+
+  
+  newBookings:[{type:mongoose.Schema.Types.ObjectId,ref:"Booking"}],
+  upComingBookings:[{type:mongoose.Schema.Types.ObjectId,ref:"Booking"}],
+  completedBookings:[{type:mongoose.Schema.Types.ObjectId,ref:"Booking"}]
 
 }, { timestamps: true });
 

@@ -11,9 +11,9 @@ const generateSlug = (name) => {
 
 
 export const addService = async (req, res) => {
-  const { name, description, images, priceInfo, categoryName } = req.body;
+  const { name, description, images, priceInfo, categoryName,minPeople,maxPeople } = req.body;
   
-  if (!name || !priceInfo || !categoryName) {
+  if (!name || !priceInfo || !categoryName || !minPeople || !maxPeople) {
     res.status(400).json({success:false,msg:"All fields are required"});
   }
 

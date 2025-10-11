@@ -14,6 +14,7 @@ import uRouter from './routes/userRoutes.js';
 import mRouter from './routes/messageRoutes.js';
 import coRouter from './routes/conversationRoutes.js';
 import rRouter from './routes/reviewRoutes.js';
+import bRouter from './routes/bookingRoutes.js';
 
 
 
@@ -44,7 +45,7 @@ app.use("/user", uRouter);
 app.use('/message', mRouter);
 app.use('/convo', coRouter);
 app.use('/review',rRouter);
-
+app.use('/booking',bRouter);
 // --- UPDATE SERVER LISTENING ---
 server.listen(PORT, () => {
     console.log("Server Started at PORT", PORT);

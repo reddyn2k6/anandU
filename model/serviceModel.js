@@ -22,12 +22,28 @@ const serviceSchema = new mongoose.Schema({
     type:Number,
     default:0
   },
-reviewCount: {
+  reviewCount: {
       type: Number,
       default: 0,
     },
 
-  availability: { type: Boolean, default: true },
+
+ currentBookingDates: {
+  type: [Date],
+  default: [],
+},
+
+  maxPeople:{
+type:Number,
+default:0
+  },
+  minPeople:{
+    type:Number,
+    default:0
+  },
+
+
+  
 
 }, { timestamps: true });
 
