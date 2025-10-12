@@ -13,7 +13,7 @@ bRouter.post("/book",protect,bookService);
 bRouter.post("/response",providerResponse);
 bRouter.post("/demo-payment",demoPayment);
 bRouter.get("/getBookings",getBookings);
-bRouter.get("/getProviderBookings",protectProvider,getnewbookings)
+bRouter.get("/getProviderBookings",protectProvider,getnewbookings);
 bRouter.get("/getUserBookings",protect,getUserBookings);
 
 

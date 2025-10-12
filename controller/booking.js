@@ -176,7 +176,6 @@ export const bookService = async (req, res) => {
 };
 
 export const providerResponse = async (req, res) => {
-
   try {
     const { bookingId, action } = req.body; // action: "accept" or "reject"
 
@@ -186,31 +185,37 @@ export const providerResponse = async (req, res) => {
         msg: "Booking ID and action are required.",
       });
     }
-  
+
     // Find the booking
     const booking = await Booking.findById(bookingId);
     if (!booking) {
-      return res.status(404).json({
-        success: false,
-        msg: "Booking not found.",
-      });
+      return res.status(404).json({ success: false, msg: "Booking not found." });
     }
 
-    // Find the provider to check ownership
+    // Find provider
     const provider = await ServiceProvider.findById(booking.provider);
     if (!provider) {
-      return res.status(404).json({
-        success: false,
-        msg: "Service provider not found.",
-      });
+      return res.status(404).json({ success: false, msg: "Service provider not found." });
     }
 
-    // Check action
     if (action === "accept") {
       booking.status = "Confirmed";
       await booking.save();
 
-      // ✅ Optional: Add date to Service.currentBookingDates
+      // Remove from newBookings
+      provider.newBookings = provider.newBookings.filter(
+        (id) => id.toString() !== booking._id.toString()
+      );
+
+      // Add to upcomingBookings if not already there
+      if (!provider.upcomingBookings.includes(booking._id)) {
+        provider.upcomingBookings.push(booking._id);
+      }
+
+      // Save provider
+      await provider.save();
+
+      // ✅ Update service booked dates
       const service = await Service.findById(booking.service);
       if (service) {
         const eventDate = new Date(booking.eventDate);
@@ -227,18 +232,26 @@ export const providerResponse = async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        msg: "Booking accepted. User can proceed to payment.",
+        msg: "Booking accepted and moved to upcoming bookings.",
         booking,
       });
+
     } else if (action === "reject") {
       booking.status = "Cancelled";
       await booking.save();
 
+      // Remove from newBookings
+      provider.newBookings = provider.newBookings.filter(
+        (id) => id.toString() !== booking._id.toString()
+      );
+      await provider.save();
+
       return res.status(200).json({
         success: true,
-        msg: "Booking rejected by provider.",
+        msg: "Booking rejected and removed from new bookings.",
         booking,
       });
+
     } else {
       return res.status(400).json({
         success: false,
@@ -246,36 +259,90 @@ export const providerResponse = async (req, res) => {
       });
     }
   } catch (err) {
-    console.error("Error in providerAccept:", err);
+    console.error("Error in providerResponse:", err);
     return res.status(500).json({ success: false, msg: "Server Error" });
   }
 };
 
-// POST /api/payment/demo
+
+
 export const demoPayment = async (req, res) => {
   try {
     const { bookingId } = req.body;
-
-    // Normally you would call Razorpay here.
-    // For demo, we just update booking directly:
 
     const booking = await Booking.findById(bookingId);
     if (!booking) {
       return res.status(404).json({ success: false, msg: "Booking not found" });
     }
 
+    // ✅ Mark payment as done and status as Confirmed
     booking.paymentStatus = "Paid";
-    booking.status = "Completed";
+    booking.status = "Confirmed";
     await booking.save();
 
-    return res.json({
+    // ✅ Move booking from newBookings → upComingBookings in provider
+    const provider = await ServiceProvider.findById(booking.provider);
+    if (provider) {
+      // Remove from newBookings
+      provider.newBookings = provider.newBookings.filter(
+        (id) => id.toString() !== booking._id.toString()
+      );
+
+      // Add to upComingBookings if not already present
+      if (!provider.upComingBookings.includes(booking._id)) {
+        provider.upComingBookings.push(booking._id);
+      }
+
+      await provider.save();
+    }
+
+    return res.status(200).json({
       success: true,
-      msg: "Demo payment successful",
+      msg: "Payment successful. Booking moved to upcoming bookings.",
       booking,
     });
   } catch (err) {
-    console.error(err);
+    console.error("Error in demoPayment:", err);
     return res.status(500).json({ success: false, msg: "Server Error" });
   }
 };
 
+export const autoMoveCompletedBookings = async () => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Find all confirmed bookings whose event date is in the past
+    const pastBookings = await Booking.find({
+      eventDate: { $lt: today },
+      status: "Confirmed",
+    });
+
+    for (const booking of pastBookings) {
+      booking.status = "Completed";
+      await booking.save();
+
+      // Move from upComingBookings → completedBookings in provider
+      const provider = await ServiceProvider.findById(booking.provider);
+      if (provider) {
+        provider.upComingBookings = provider.upComingBookings.filter(
+          (id) => id.toString() !== booking._id.toString()
+        );
+
+        if (!provider.completedBookings.includes(booking._id)) {
+          provider.completedBookings.push(booking._id);
+        }
+
+        await provider.save();
+      }
+    }
+
+    console.log("✅ Auto update: moved completed bookings successfully.");
+  } catch (err) {
+    console.error("❌ Error in autoMoveCompletedBookings:", err);
+  }
+};
+
+export default {
+  serviceAvailability,autoMoveCompletedBookings,providerResponse,demoPayment,bookService
+}

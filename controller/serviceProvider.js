@@ -41,6 +41,47 @@ if(!providerId) {
     }
 }
 
+
+export const getcompletedBookings=async(req,res)=>{
+    try{
+       const providerId=req.provider._id;
+if(!providerId) {
+    return res.status(400).json({success:false,msg:"No providerId found"});
+}
+       const provider=await ServiceProvider.findById(providerId);
+
+       if(!provider) {
+            return res.status(400).json({success:false,msg:"No such provider"});
+       }
+
+       return res.status(200).json({success:true, newBookings:provider.completedBookings});
+    }
+    catch(err) {
+        return res.status(400).json({success:false,msg:"Server Error"});
+    }
+}
+
+
+export const getupComingBookings=async(req,res)=>{
+    try{
+       const providerId=req.provider._id;
+if(!providerId) {
+    return res.status(400).json({success:false,msg:"No providerId found"});
+}
+       const provider=await ServiceProvider.findById(providerId);
+
+       if(!provider) {
+            return res.status(400).json({success:false,msg:"No such provider"});
+       }
+
+       return res.status(200).json({success:true, newBookings:provider.upComingBookings});
+    }
+    catch(err) {
+        return res.status(400).json({success:false,msg:"Server Error"});
+    }
+}
+
+
 export const getBookings=async(req,res)=>{
        try{
            const bookings=await Booking.find({});
@@ -142,4 +183,4 @@ export const updateService = async (req, res) => {
   }
 };
 
-export default {getAllServices,updateService, getnewbookings};
+export default {getAllServices,updateService, getnewbookings,getcompletedBookings,getupComingBookings};

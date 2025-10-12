@@ -3,6 +3,14 @@ import cors from 'cors';
 import 'dotenv/config.js';
 import http from 'http'; // Required for Socket.IO
 import { Server } from 'socket.io'; // Required for Socket.IO
+import cron from "node-cron";
+import { autoMoveCompletedBookings } from './controller/booking.js';
+
+cron.schedule("0 0 * * *", () => {
+  autoMoveCompletedBookings();
+});
+
+
 
 import router from "./routes/authRoutes.js";
 import cookieParser from "cookie-parser";
@@ -15,6 +23,7 @@ import mRouter from './routes/messageRoutes.js';
 import coRouter from './routes/conversationRoutes.js';
 import rRouter from './routes/reviewRoutes.js';
 import bRouter from './routes/bookingRoutes.js';
+
 
 
 

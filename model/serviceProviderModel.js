@@ -10,6 +10,7 @@ const serviceProviderSchema = new mongoose.Schema({
 verifyOtp:{ type:String, default:'',},
 verifyOtpExpireAt:{ type:Number, default:0,},
 
+// images for previousProjects
   previousProjects: [{
     title: { type: String },
     description: { type: String },
@@ -19,9 +20,9 @@ verifyOtpExpireAt:{ type:Number, default:0,},
   services: [{ type: mongoose.Schema.Types.ObjectId, ref: "Service" }],
 
   
-  newBookings:[{type:mongoose.Schema.Types.ObjectId,ref:"Booking"}],
-  upComingBookings:[{type:mongoose.Schema.Types.ObjectId,ref:"Booking"}],
-  completedBookings:[{type:mongoose.Schema.Types.ObjectId,ref:"Booking"}]
+  newBookings:[{type:mongoose.Schema.Types.ObjectId,ref:"Booking"}], // which are to be accepted
+  upComingBookings:[{type:mongoose.Schema.Types.ObjectId,ref:"Booking"}], // which are accepted but not completed
+  completedBookings:[{type:mongoose.Schema.Types.ObjectId,ref:"Booking"}] // which are completed
 
 }, { timestamps: true });
 
