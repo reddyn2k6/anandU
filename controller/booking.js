@@ -208,8 +208,8 @@ export const providerResponse = async (req, res) => {
       );
 
       // Add to upcomingBookings if not already there
-      if (!provider.upcomingBookings.includes(booking._id)) {
-        provider.upcomingBookings.push(booking._id);
+      if (!provider.upComingBookings.includes(booking._id)) {
+        provider.upComingBookings.push(booking._id);
       }
 
       // Save provider
