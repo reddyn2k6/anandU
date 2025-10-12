@@ -90,8 +90,9 @@ console.log(`User room created for: ${userData._id}`);
   });
 
   // Typing indicators
-  socket.on("typing", (room) => socket.in(room).emit("typing"));
-  socket.on("stop typing", (room) => socket.in(room).emit("stop typing"));
+ // Corrected lines in index.js:
+socket.on("typing", (room) => socket.to(room).emit("typing", { conversationId: room }));
+socket.on("stop typing", (room) => socket.to(room).emit("stop typing", { conversationId: room }));
 
   // Handling a new message
   socket.on("new message", (newMessageRecieved) => {
