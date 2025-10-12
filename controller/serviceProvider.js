@@ -22,64 +22,108 @@ catch(err){
 
 }
 
-export const getnewbookings=async(req,res)=>{
-    try{
-       const providerId=req.provider._id;
-if(!providerId) {
-    return res.status(400).json({success:false,msg:"No providerId found"});
-}
-       const provider=await ServiceProvider.findById(providerId);
+export const getnewbookings = async (req, res) => {
+  try {
+    const providerId = req.provider._id;
 
-       if(!provider) {
-            return res.status(400).json({success:false,msg:"No such provider"});
-       }
-
-       return res.status(200).json({success:true, newBookings:provider.newBookings});
+    if (!providerId) {
+      return res.status(400).json({ success: false, msg: "No providerId found" });
     }
-    catch(err) {
-        return res.status(400).json({success:false,msg:"Server Error"});
+
+    // ✅ Populate newBookings to get full booking data
+    const provider = await ServiceProvider.findById(providerId)
+      .populate({
+        path: "newBookings", // this field stores booking IDs
+        model: "Booking", // explicitly specify model (good practice)
+        populate: [
+          { path: "user", model: "User" },
+          { path: "service", model: "Service" },
+        ],
+      });
+
+    if (!provider) {
+      return res.status(404).json({ success: false, msg: "Provider not found" });
     }
-}
+
+    // ✅ Now provider.newBookings contains full Booking documents (with user & service details)
+    return res.status(200).json({
+      success: true,
+      newBookings: provider.newBookings,
+    });
+
+  } catch (err) {
+    console.error("Error fetching new bookings:", err);
+    return res.status(500).json({ success: false, msg: "Server Error" });
+  }
+};
 
 
-export const getcompletedBookings=async(req,res)=>{
-    try{
-       const providerId=req.provider._id;
-if(!providerId) {
-    return res.status(400).json({success:false,msg:"No providerId found"});
-}
-       const provider=await ServiceProvider.findById(providerId);
+export const getcompletedBookings = async (req, res) => {
+  try {
+    const providerId = req.provider._id;
 
-       if(!provider) {
-            return res.status(400).json({success:false,msg:"No such provider"});
-       }
-
-       return res.status(200).json({success:true, newBookings:provider.completedBookings});
+    if (!providerId) {
+      return res.status(400).json({ success: false, msg: "No providerId found" });
     }
-    catch(err) {
-        return res.status(400).json({success:false,msg:"Server Error"});
+
+    const provider = await ServiceProvider.findById(providerId)
+      .populate({
+        path: "completedBookings",
+        model: "Booking",
+        populate: [
+          { path: "user", model: "User" },
+          { path: "service", model: "Service" },
+        ],
+      });
+
+    if (!provider) {
+      return res.status(404).json({ success: false, msg: "Provider not found" });
     }
-}
+
+    return res.status(200).json({
+      success: true,
+      completedBookings: provider.completedBookings,
+    });
+  } catch (err) {
+    console.error("Error fetching completed bookings:", err);
+    return res.status(500).json({ success: false, msg: "Server Error" });
+  }
+};
 
 
-export const getupComingBookings=async(req,res)=>{
-    try{
-       const providerId=req.provider._id;
-if(!providerId) {
-    return res.status(400).json({success:false,msg:"No providerId found"});
-}
-       const provider=await ServiceProvider.findById(providerId);
 
-       if(!provider) {
-            return res.status(400).json({success:false,msg:"No such provider"});
-       }
+export const getupComingBookings = async (req, res) => {
+  try {
+    const providerId = req.provider._id;
 
-       return res.status(200).json({success:true, newBookings:provider.upComingBookings});
+    if (!providerId) {
+      return res.status(400).json({ success: false, msg: "No providerId found" });
     }
-    catch(err) {
-        return res.status(400).json({success:false,msg:"Server Error"});
+
+    const provider = await ServiceProvider.findById(providerId)
+      .populate({
+        path: "upComingBookings",
+        model: "Booking",
+        populate: [
+          { path: "user", model: "User" },
+          { path: "service", model: "Service"},
+        ],
+      });
+
+    if (!provider) {
+      return res.status(404).json({ success: false, msg: "Provider not found" });
     }
-}
+
+    return res.status(200).json({
+      success: true,
+      upComingBookings: provider.upComingBookings,
+    });
+  } catch (err) {
+    console.error("Error fetching upcoming bookings:", err);
+    return res.status(500).json({ success: false, msg: "Server Error" });
+  }
+};
+
 
 
 export const getBookings=async(req,res)=>{
