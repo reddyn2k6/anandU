@@ -65,7 +65,7 @@ export const serviceAvailability = async (req, res) => {
     if (diffInDays < service.mindaysprior) {
       return res.status(400).json({
         success: false,
-        msg: `This service must be booked at least ${service.minDaysPrior} days in advance.`,
+        msg: `This service must be booked at least ${service.mindaysprior} days in advance.`,
       });
     }
 
