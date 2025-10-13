@@ -65,7 +65,7 @@ export const serviceAvailability = async (req, res) => {
     if (diffInDays < service.mindaysprior) {
       return res.status(400).json({
         success: false,
-        msg: `This service must be booked at least ${service.minDaysPrior} days in advance.`,
+        msg: `This service must be booked at least ${service.mindaysprior} days in advance.`,
       });
     }
 
@@ -208,8 +208,8 @@ export const providerResponse = async (req, res) => {
       );
 
       // Add to upcomingBookings if not already there
-      if (!provider.upcomingBookings.includes(booking._id)) {
-        provider.upcomingBookings.push(booking._id);
+      if (!provider.upComingBookings.includes(booking._id)) {
+        provider.upComingBookings.push(booking._id);
       }
 
       // Save provider

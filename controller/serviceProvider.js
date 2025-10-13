@@ -2,7 +2,7 @@ import ServiceProvider from "../model/serviceProviderModel.js";
 import Service from "../model/serviceModel.js";
 import Category from "../model/categoryModel.js"
 import Booking from "../model/bookingModel.js";
-
+import cloudinary from "../config/cloudinary.js";
 export const getAllServices=async(req ,res) =>{
 
     try{
@@ -124,7 +124,151 @@ export const getupComingBookings = async (req, res) => {
   }
 };
 
+const uploadImages = async (files) => {
+  const uploadPromises = files.map(file => {
+    return new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { folder: "service-images" },
+        (error, result) => {
+          if (error) return reject(error);
+          resolve({ url: result.secure_url, public_id: result.public_id });
+        }
+      );
+      uploadStream.end(file.buffer);
+    });
+  });
+  return await Promise.all(uploadPromises);
+};
 
+
+export const updateService = async (req, res) => {
+  try {
+    const { serviceId, categoryName, imagesToKeep, imagesToKeepJSON, ...updateData } = req.body;
+    
+    // Validate serviceId
+    if (!serviceId) {
+      return res.status(400).json({ success: false, msg: "Service ID is required" });
+    }
+
+    const service = await Service.findById(serviceId);
+
+    if (!service) {
+      return res.status(404).json({ success: false, msg: "Service not found" });
+    }
+    
+    if (service.providers.toString() !== req.provider._id.toString()) {
+      return res.status(403).json({ success: false, msg: "Not authorized to update this service" });
+    }
+
+    // Handle category update
+    if (categoryName) {
+      let category = await Category.findOne({ name: categoryName });
+      if (!category) {
+        const generateSlug = (name) => {
+          return name.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-').replace(/[^\w-]+/g, '');
+        };
+        category = await Category.create({ 
+          name: categoryName, 
+          slug: generateSlug(categoryName) 
+        });
+      }
+      updateData.categories = category._id;
+    }
+
+    // Parse imagesToKeep (handle both imagesToKeep and imagesToKeepJSON for backward compatibility)
+    let keepUrls = [];
+    const imagesToKeepData = imagesToKeep || imagesToKeepJSON;
+    
+    if (imagesToKeepData) {
+      try {
+        // Handle both string and already-parsed array
+        if (typeof imagesToKeepData === 'string') {
+          keepUrls = JSON.parse(imagesToKeepData);
+        } else if (Array.isArray(imagesToKeepData)) {
+          keepUrls = imagesToKeepData;
+        } else {
+          keepUrls = [imagesToKeepData];
+        }
+      } catch (e) {
+        console.error("Error parsing imagesToKeep:", e);
+        return res.status(400).json({ 
+          success: false, 
+          msg: "Invalid format for imagesToKeep. Expected a JSON array of URLs." 
+        });
+      }
+    }
+
+    // Filter images: separate those to keep and those to delete
+    const keptImages = service.images.filter(img => keepUrls.includes(img.url));
+    const imagesToDelete = service.images.filter(img => !keepUrls.includes(img.url));
+
+    // Delete unwanted images from Cloudinary
+    if (imagesToDelete.length > 0) {
+      const publicIdsToDelete = imagesToDelete.map(img => img.public_id);
+      try {
+        await cloudinary.api.delete_resources(publicIdsToDelete);
+      } catch (cloudinaryError) {
+        console.error("Error deleting from Cloudinary:", cloudinaryError);
+        return res.status(500).json({ 
+          success: false, 
+          msg: "Failed to delete old images from cloud storage" 
+        });
+      }
+    }
+
+    // Upload new images if any
+    let newUploadedImages = [];
+    if (req.files && req.files.length > 0) {
+      try {
+        newUploadedImages = await uploadImages(req.files);
+      } catch (uploadError) {
+        console.error("Error uploading new images:", uploadError);
+        return res.status(500).json({ 
+          success: false, 
+          msg: "Failed to upload new images" 
+        });
+      }
+    }
+
+    // Combine kept images with newly uploaded images
+    updateData.images = [...keptImages, ...newUploadedImages];
+
+    // Validate that there's at least one image
+    if (updateData.images.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        msg: "Service must have at least one image" 
+      });
+    }
+
+    // Update the service
+    const updatedService = await Service.findByIdAndUpdate(
+      serviceId, 
+      updateData, 
+      { new: true, runValidators: true }
+    ).populate('categories providers');
+
+    if (!updatedService) {
+      return res.status(404).json({ 
+        success: false, 
+        msg: "Failed to update service" 
+      });
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      msg: "Service updated successfully", 
+      service: updatedService 
+    });
+  } catch (error) {
+    console.error("Error updating service:", error);
+    res.status(500).json({ 
+      success: false, 
+      msg: "Server error while updating service",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
 
 export const getBookings=async(req,res)=>{
        try{
@@ -140,91 +284,8 @@ export const getBookings=async(req,res)=>{
        }
 }
 
-export const updateService = async (req, res) => {
-  try {
-    const providerId = req.provider._id;
-    const {
-      serviceId,
-      name,
-      description,
-      priceInfo,
-      images,
-      categories, // ✅ keeping as "categories"
-      minPeople,
-      maxPeople,
-      mindaysprior,
-    } = req.body;
 
-    // 1️⃣ Verify service ownership
-    const service = await Service.findOne({ _id: serviceId, providers: providerId });
-    if (!service) {
-      return res.status(404).json({
-        success: false,
-        msg: "Service not found or unauthorized.",
-      });
-    }
-
-    // 2️⃣ Update category if changed
-    if (categories && typeof categories === "string" && categories.trim() !== "") {
-      let newCategory = await Category.findOne({ name: categories });
-
-      if (!newCategory) {
-        newCategory = await Category.create({
-          name: categories,
-          slug: categories.toLowerCase().replace(/\s+/g, "-"),
-        });
-      }
-
-      if (service.categories.toString() !== newCategory._id.toString()) {
-        // Remove from old category
-        await Category.findByIdAndUpdate(service.categories, {
-          $pull: { services: service._id },
-        });
-
-        // Add to new category
-        await Category.findByIdAndUpdate(newCategory._id, {
-          $addToSet: { services: service._id },
-        });
-
-        service.categories = newCategory._id;
-      }
-    }
-
-    // 3️⃣ Update fields
-    if (name) service.name = name.trim();
-    if (description) service.description = description.trim();
-    if (priceInfo) service.priceInfo = priceInfo;
-    if (images && Array.isArray(images) && images.length > 0) service.images = images;
-    if (minPeople !== undefined && minPeople !== null)
-      service.minPeople = Number(minPeople);
-    if (maxPeople !== undefined && maxPeople !== null)
-      service.maxPeople = Number(maxPeople);
-    if (mindaysprior !== undefined && mindaysprior !== null)
-      service.mindaysprior = Number(mindaysprior);
-
-    // 4️⃣ Validate people constraints
-    if (service.minPeople > service.maxPeople) {
-      return res.status(400).json({
-        success: false,
-        msg: "Minimum people cannot be greater than maximum people.",
-      });
-    }
-
-    // 5️⃣ Save updated service
-    await service.save();
-
-    return res.status(200).json({
-      success: true,
-      msg: "Service updated successfully.",
-      service,
-    });
-  } catch (err) {
-    console.error("Update Service Error:", err);
-    return res.status(500).json({
-      success: false,
-      msg: "Server error.",
-    });
-  }
-};
 
 export default {getAllServices,updateService, getnewbookings,getcompletedBookings,getupComingBookings};
+
+
